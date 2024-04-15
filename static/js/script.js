@@ -201,7 +201,7 @@ const updateOffCanvasContentLeft = (airportsArray) => {
 
 const updateOffCanvasContentRight = (airplanes) => {
     const offCanvasBody = $('#offcanvasRightScrolling .offcanvas-body');
-    let content = airplanes.map(plane => `
+    let content = airplanes.map(((plane, index) => `
         <div class="card mb-3" style="width: 18rem;">
           <img src="https://placehold.co/400" class="card-img-top" alt="PLCEHOLDER">
           <div class="card-body">
@@ -214,11 +214,46 @@ const updateOffCanvasContentRight = (airplanes) => {
                 <strong>Price per km:</strong> ${plane.price_per_km}<br>
                 <strong>Extra Fuel Charge:</strong> ${plane.extraFuelCharge}
             </p>
-            <a href="#" class="btn btn-primary">Go somewhere</a>
+            <a href="#" class="btn btn-primary plane-select-button" data-plane-index="${index}">Go somewhere</a>
           </div>
         </div>
-    `).join('');
+    `)).join('');
     offCanvasBody.html(content);
+
+    // Attach event listeners
+    attachButtonListeners(airplanes);
+}
+
+const attachButtonListeners = (airplanes) => {
+    const buttons = $('.plane-select-button');
+    buttons.on('click', function (event) {
+        event.preventDefault();
+        const index = $(this).data('plane-index');
+        const selectedPlane = airplanes[index];
+        console.log('Selected plane:', selectedPlane);
+
+        addAirplaneToCart(selectedPlane);
+    });
+}
+
+const addAirplaneToCart = (plane) => {
+
+    const selectedAirplane = $('#selectedAirplanes');
+    selectedAirplane.html(`
+        <div class="card mb-3" style="width: 18rem;">
+            <div class="card-body">
+                <h5 class="card-title>${plane.type_of_plane}</h5>
+                <p class="card-text">
+                    <strong>Speed:</strong> ${plane.speed_kph} km/h<br>
+                    <strong>Max Takeoff Altitude:</strong> ${plane.maxTakeOffAlt} ft<br>
+                    <strong>Seats Remaining:</strong> ${plane.seats_remaining}<br>
+                    <strong>Price per km:</strong> ${plane.price_per_km}<br>
+                    <strong>Extra Fuel Charge:</strong> ${plane.extraFuelCharge}
+                    <strong>Plane Type:</strong> ${plane.type_of_plane}
+                </p>
+            </div>
+        </div>
+    `);
 }
 
 const fetchAndFilterAirplanes = async (elevation) => {
@@ -230,8 +265,8 @@ const fetchAndFilterAirplanes = async (elevation) => {
         const suitableAirplaneData = airplanesData.filter(airplane => airplane.maxTakeOffAlt >= elevation);
 
         const airplanes = suitableAirplaneData.map(airplane => new Airplane(
-            airplane.type_of_plane,
             airplane.speed_kph,
+            airplane.type_of_plane,
             airplane.maxTakeOffAlt,
             airplane.seats_remaining,
             airplane.price_per_km,
