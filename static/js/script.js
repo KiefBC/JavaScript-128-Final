@@ -1,7 +1,8 @@
 const APIKEY = `74e74212810120ff011cae4328da36a6`;
 let map;
 let clickedMarkers = [];
-let airportArray = [];
+let airportElevationArray = [];
+let airportsArray = [];
 
 const getWeatherInfo = async (lat, lng) => {
     try {
@@ -53,18 +54,22 @@ const buildAirports = () => {
 
                     handleMarkerClick(targetMarker);
 
-                    if (airportArray.length < 2) {
-                        console.log(`Airport Added: ${airport["elevationInFt"]}`)
-                        airportArray.push(airport["elevationInFt"]);
+                    if (airportElevationArray.length < 2) {
+                        airportElevationArray.push(airport["elevationInFt"]);
+                        // add airport to array
+                        airportsArray.push(new Airports(airport["City Name"], airport["Airport Name"], airport["Country"], airport["elevationInFt"], lat, lng));
                     } else {
-                        airportArray = [];
-                        airportArray.push(airport["elevationInFt"]);
+                        airportElevationArray = [];
+                        airportsArray = [];
+                        airportsArray.push(new Airports(airport["City Name"], airport["Airport Name"], airport["Country"], airport["elevationInFt"], lat, lng));
+                        airportElevationArray.push(airport["elevationInFt"]);
                     }
 
                     // Filter airplanes based on elevation of the first airport
-                    if (airportArray.length === 2) {
-                        console.log(`Getting Max Elevation: ${Math.max(...airportArray)}`)
-                        fetchAndFilterAirplanes(Math.max(...airportArray));
+                    if (airportElevationArray.length === 2) {
+                        console.log(`Getting Max Elevation: ${Math.max(...airportElevationArray)}`)
+                        fetchAndFilterAirplanes(Math.max(...airportElevationArray));
+                        updateOffCanvasContentLeft(airportsArray);
                     }
                 });
 
@@ -159,18 +164,40 @@ const convertDMSToDecimal = (coordinate) => {
     return [convertPart(lat), convertPart(lon)];
 };
 
-const updateOffCanvasContentLeft = (latLng1, latLng2) => {
-    const offCanvasBody = $('#offcanvasScrolling .offcanvas-body');
-    offCanvasBody.html(`
-        <div class="card" style="width: 18rem;">
-          <img src="https://placehold.co/400" class="card-img-top" alt="PLACEHOLDER">
-          <div class="card-body">
-            <h5 class="card-title">Card title</h5>
-            <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-          </div>
-        </div>
-    `);
-}
+const updateOffCanvasContentLeft = (airportsArray) => {
+    console.log("Current airports in array:", airportsArray);
+    if (airportsArray.length > 0) {
+        const offCanvasBody = $('#airports');
+        offCanvasBody.html(`
+            <div class="card mb-3" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title">${airportsArray[0].city}</h5>
+                    <p class="card-text">
+                        <strong>Airport Name:</strong> ${airportsArray[0].airportName}<br>
+                        <strong>Country:</strong> ${airportsArray[0].country}<br>
+                        <strong>Elevation:</strong> ${airportsArray[0].elevation} ft<br>
+                        <strong>Latitude:</strong> ${airportsArray[0].lat}<br>
+                        <strong>Longitude:</strong> ${airportsArray[0].lon}
+                    </p>
+                </div>
+            </div>
+            <div class="card mb-3" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title>${airportsArray[1].city}</h5>
+                    <p class="card-text">
+                        <strong>Airport Name:</strong> ${airportsArray[1].airportName}<br>
+                        <strong>Country:</strong> ${airportsArray[1].country}<br>
+                        <strong>Elevation:</strong> ${airportsArray[1].elevation} ft<br>
+                        <strong>Latitude:</strong> ${airportsArray[1].lat}<br>
+                        <strong>Longitude:</strong> ${airportsArray[1].lon}
+                    </p>
+                </div>
+            </div>
+        `);
+    } else {
+        console.log("No airports available to display.");
+    }
+};
 
 const updateOffCanvasContentRight = (airplanes) => {
     const offCanvasBody = $('#offcanvasRightScrolling .offcanvas-body');
