@@ -1,6 +1,7 @@
 const APIKEY = `74e74212810120ff011cae4328da36a6`;
 let map;
 let clickedMarkers = [];
+let airportArray = [];
 
 const getWeatherInfo = async (lat, lng) => {
     try {
@@ -50,8 +51,21 @@ const buildAirports = () => {
                         });
                     }
 
-                    // Handle the clicked markers for drawing a line
                     handleMarkerClick(targetMarker);
+
+                    if (airportArray.length < 2) {
+                        console.log(`Airport Added: ${airport["elevationInFt"]}`)
+                        airportArray.push(airport["elevationInFt"]);
+                    } else {
+                        airportArray = [];
+                        airportArray.push(airport["elevationInFt"]);
+                    }
+
+                    // Filter airplanes based on elevation of the first airport
+                    if (airportArray.length === 2) {
+                        console.log(`Getting Max Elevation: ${Math.max(...airportArray)}`)
+                        fetchAndFilterAirplanes(Math.max(...airportArray));
+                    }
                 });
 
                 marker.bindPopup("Click to load weather data");
@@ -59,8 +73,29 @@ const buildAirports = () => {
         });
 };
 
+class Airplane {
+    constructor(speed_kph, type_of_plane, seats_remaining, price_per_km, extraFuelCharge, maxTakeOffAlt) {
+        this.type_of_plane = type_of_plane;
+        this.speed_kph = speed_kph;
+        this.maxTakeOffAlt = maxTakeOffAlt;
+        this.seats_remaining = seats_remaining;
+        this.price_per_km = price_per_km;
+        this.extraFuelCharge = extraFuelCharge;
+    }
+}
+
+class Airports {
+    constructor(city, airportName, country, elevation, lat, lon) {
+        this.airportName = airportName;
+        this.city = city;
+        this.country = country;
+        this.elevation = elevation;
+        this.lat = lat;
+        this.lon = lon;
+    }
+}
+
 const handleMarkerClick = (marker) => {
-    console.log(`Marker clicked at ${marker.getLatLng()}`);
     clickedMarkers.push(marker);
 
     // if polyline already exists, remove it
@@ -75,22 +110,22 @@ const handleMarkerClick = (marker) => {
         const [marker1, marker2] = clickedMarkers;
         const latLng1 = marker1.getLatLng();
         const latLng2 = marker2.getLatLng();
+
         // Create the polyline
         const polyline = L.polyline([latLng1, latLng2], { color: 'red' }).addTo(map);
 
         // Calculate the distance
         const distance = latLng1.distanceTo(latLng2);
         const distanceInKm = distance / 1000;
-        console.log(`Distance in METERS: ${distance}`); // Distance in meters
-        console.log(`Distance in KILOMETERS: ${distanceInKm}`); // Distance in kilometers
 
         clickedMarkers = []; // Reset the array after drawing the line
 
         // Use jQuery to show the off-canvas
         $('#offcanvasScrolling').offcanvas('show');
+        $('#offcanvasRightScrolling').offcanvas('show');
 
         // Update the content of the off-canvas, if necessary
-        updateOffCanvasContent(latLng1, latLng2);
+        updateOffCanvasContentLeft(latLng1, latLng2);
 
     } else if (clickedMarkers.length > 2) {
         // Reset if more than 2 markers are clicked without clearing the first two
@@ -124,14 +159,64 @@ const convertDMSToDecimal = (coordinate) => {
     return [convertPart(lat), convertPart(lon)];
 };
 
-const updateOffCanvasContent = (latLng1, latLng2) => {
+const updateOffCanvasContentLeft = (latLng1, latLng2) => {
     const offCanvasBody = $('#offcanvasScrolling .offcanvas-body');
     offCanvasBody.html(`
-        <div>First location: ${latLng1.lat}, ${latLng1.lng}</div>
-        <div>Second location: ${latLng2.lat}, ${latLng2.lng}</div>
+        <div class="card" style="width: 18rem;">
+          <img src="https://placehold.co/400" class="card-img-top" alt="PLACEHOLDER">
+          <div class="card-body">
+            <h5 class="card-title">Card title</h5>
+            <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+          </div>
+        </div>
     `);
 }
 
+const updateOffCanvasContentRight = (airplanes) => {
+    const offCanvasBody = $('#offcanvasRightScrolling .offcanvas-body');
+    let content = airplanes.map(plane => `
+        <div class="card mb-3" style="width: 18rem;">
+          <img src="https://placehold.co/400" class="card-img-top" alt="PLCEHOLDER">
+          <div class="card-body">
+            <h5 class="card-title">cHOOSE yOUR pLANE</h5>
+            <p class="card-text">
+                <strong>Type:</strong> ${plane.type_of_plane}<br>
+                <strong>Speed:</strong> ${plane.speed_kph} km/h<br>
+                <strong>Max Takeoff Altitude:</strong> ${plane.maxTakeOffAlt} ft<br>
+                <strong>Seats Remaining:</strong> ${plane.seats_remaining}<br>
+                <strong>Price per km:</strong> ${plane.price_per_km}<br>
+                <strong>Extra Fuel Charge:</strong> ${plane.extraFuelCharge}
+            </p>
+            <a href="#" class="btn btn-primary">Go somewhere</a>
+          </div>
+        </div>
+    `).join('');
+    offCanvasBody.html(content);
+}
+
+const fetchAndFilterAirplanes = async (elevation) => {
+    try {
+        const response = await fetch('static/public/fake_flights.json'); // Adjust the path as necessary
+        const airplanesData = await response.json();
+
+        // First filter the raw data
+        const suitableAirplaneData = airplanesData.filter(airplane => airplane.maxTakeOffAlt >= elevation);
+
+        const airplanes = suitableAirplaneData.map(airplane => new Airplane(
+            airplane.type_of_plane,
+            airplane.speed_kph,
+            airplane.maxTakeOffAlt,
+            airplane.seats_remaining,
+            airplane.price_per_km,
+            airplane.extraFuelCharge
+        ));
+
+        console.log(airplanes);
+        updateOffCanvasContentRight(airplanes);
+    } catch (error) {
+        console.error('Failed to load airplane data:', error);
+    }
+};
 
 const mapContainer = $('#map'); // Your map container
 const offCanvasWidth = $('.offcanvasScrolling').width(); // Get the width of the off-canvas
@@ -148,4 +233,3 @@ $('#offcanvasScrolling').on('hidden.bs.offcanvas', function () {
 
 initializeMap();
 buildAirports();
-
