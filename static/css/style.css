@@ -6,7 +6,7 @@ body, html {
     background-color: #1f1f1f;
 }
 
-.offcanvas, .leaflet-popup-content-wrapper {
+.offcanvas, .leaflet-popup-content-wrapper, .modal-content {
     background-color: #1f1f1f;
     color: #c74014;
 }
@@ -14,4 +14,23 @@ body, html {
 .card {
     background-color: #494847;
     color: #c74014;
+}
+
+.modal-body {
+    background-color: #494847;
+}
+
+.btn {
+    background-color: #c74014;
+    color: #1f1f1f;
+    /* no border */
+    border: none;
+}
+
+.btn:hover, .btn:focus, .btn:active {
+    background-color: #8f3415 !important;
+    color: #1f1f1f;
+    border: none;
+    outline: none;
+    box-shadow: none;
 }
